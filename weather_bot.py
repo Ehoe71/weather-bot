@@ -1,11 +1,12 @@
 import requests
 
-# --- ВАЖНО: ЗАМЕНИТЕ ЭТО НА ВАШ ТОПИК ИЗ NTFY ---
-NTFY_TOPIC = "pogoda_kurgan_7m_2024" 
-# ------------------------------------------------
+# --- НАСТРОЙКИ TELEGRAM ---
+TELEGRAM_TOKEN = "8847922404:AAGfmnFQXE-0S3uhOCr17HUVqnY2GM4njeI"
+TELEGRAM_CHAT_ID = "Ehoe_pogoda"
+# --------------------------
 
 LAT, LON = 55.4490, 65.3434  # Координаты Кургана
-TIMEZONE = "Asia/Yekaterinburg"  # Часовой пояс Кургана (UTC+5)
+TIMEZONE = "Asia/Yekaterinburg"
 
 url = "https://api.open-meteo.com/v1/forecast"
 params = {
@@ -41,14 +42,10 @@ try:
         f"🌧 Осадки: {current['precipitation']} мм"
     )
     
-    ntfy_url = f"https://ntfy.sh/{NTFY_TOPIC}"
-    headers = {
-        "Title": "Погода в Кургане",
-        "Priority": "default",
-        "Tags": "cloud"
-    }
-    ntfy_response = requests.post(ntfy_url, data=message.encode('utf-8'), headers=headers, timeout=15)
-    ntfy_response.raise_for_status()
+    # Отправка в Telegram
+    tg_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    tg_response = requests.post(tg_url, data={"chat_id": TELEGRAM_CHAT_ID, "text": message}, timeout=15)
+    tg_response.raise_for_status()
     print("Уведомление отправлено успешно!")
 
 except Exception as e:
