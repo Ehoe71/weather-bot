@@ -1,4 +1,5 @@
 import requests
+from datetime import datetime, timedelta
 
 # --- НАСТРОЙКИ TELEGRAM ---
 TELEGRAM_TOKEN = "8847922404:AAGfmnFQXE-0S3uhOCr17HUVqnY2GM4njeI"
