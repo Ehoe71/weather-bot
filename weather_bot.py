@@ -2,7 +2,7 @@ import requests
 
 # --- НАСТРОЙКИ TELEGRAM ---
 TELEGRAM_TOKEN = "8847922404:AAGfmnFQXE-0S3uhOCr17HUVqnY2GM4njeI"
-TELEGRAM_CHAT_ID = "Ehoe_pogoda"
+TELEGRAM_CHAT_ID = "444451877"
 # --------------------------
 
 LAT, LON = 55.4490, 65.3434  # Координаты Кургана
