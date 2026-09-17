@@ -2,8 +2,8 @@ import requests
 
 # --- НАСТРОЙКИ TELEGRAM ---
 # Можете использовать тот же токен и ID, что и для погоды!
-TELEGRAM_TOKEN = "ВАШ_ТОКЕН"
-TELEGRAM_CHAT_ID = "ВАШ_CHAT_ID"
+TELEGRAM_TOKEN = "8847922404:AAGfmnFQXE-0S3uhOCr17HUVqnY2GM4njeI"
+TELEGRAM_CHAT_ID = "444451877"
 # --------------------------
 
 url = "https://api.coingecko.com/api/v3/simple/price"
