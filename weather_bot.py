@@ -74,4 +74,4 @@ try:
     print("Уведомление отправлено успешно!")
 
 except Exception as e:
-    print(f"Ошибка: {e}")
+    raise e
