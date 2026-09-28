@@ -1,16 +1,14 @@
 import requests
 
 # --- НАСТРОЙКИ TELEGRAM ---
-# Можете использовать тот же токен и ID, что и для погоды!
-TELEGRAM_TOKEN = "8847922404:AAGfmnFQXE-0S3uhOCr17HUVqnY2GM4njeI"
-TELEGRAM_CHAT_ID = "444451877"
+TELEGRAM_TOKEN = "8847922404:AAGfmnFQXE-0S3uhOCr17HUVqnY2GM4njeI"        # <-- вставьте свой токен
+TELEGRAM_CHAT_ID = "444451877"    # <-- вставьте свой Chat ID
 # --------------------------
-
 
 url = "https://api.coingecko.com/api/v3/simple/price"
 params = {
     "ids": "bitcoin,ethereum,solana,dash",
-    "vs_currencies": "usd,usdt"   # <-- заменили rub на usdt
+    "vs_currencies": "usd"   # <-- только USD, чтобы API не капризничал
 }
 
 try:
@@ -18,25 +16,17 @@ try:
     response.raise_for_status()
     data = response.json()
 
-    btc_usd = data["bitcoin"]["usd"]
-    btc_usdt = data["bitcoin"]["usdt"]
-    eth_usd = data["ethereum"]["usd"]
-    eth_usdt = data["ethereum"]["usdt"]
-    sol_usd = data["solana"]["usd"]
-    sol_usdt = data["solana"]["usdt"]
-    dash_usd = data["dash"]["usd"]
-    dash_usdt = data["dash"]["usdt"]
+    btc = data["bitcoin"]["usd"]
+    eth = data["ethereum"]["usd"]
+    sol = data["solana"]["usd"]
+    dash = data["dash"]["usd"]
 
     message = (
-        f"💰 Курс криптовалют:\n\n"
-        f"🟡 Bitcoin (BTC):\n"
-        f"   ${btc_usd:,.0f} / {btc_usdt:,.0f} USDT\n\n"
-        f"🔵 Ethereum (ETH):\n"
-        f"   ${eth_usd:,.0f} / {eth_usdt:,.0f} USDT\n\n"
-        f"🟣 Solana (SOL):\n"
-        f"   ${sol_usd:,.2f} / {sol_usdt:,.2f} USDT\n\n"
-        f"🔷 Dash (DASH):\n"
-        f"   ${dash_usd:,.2f} / {dash_usdt:,.2f} USDT"
+        f"💰 Курс криптовалют (USDT):\n\n"
+        f"🟡 Bitcoin (BTC):  ${btc:,.0f}\n\n"
+        f"🔵 Ethereum (ETH):  ${eth:,.0f}\n\n"
+        f"🟣 Solana (SOL):  ${sol:,.2f}\n\n"
+        f"🔷 Dash (DASH):  ${dash:,.2f}"
     )
 
     tg_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
@@ -46,3 +36,6 @@ try:
 except Exception as e:
     print(f"Ошибка: {e}")
     raise e
+import requests
+
+
