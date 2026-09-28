@@ -6,10 +6,11 @@ TELEGRAM_TOKEN = "8847922404:AAGfmnFQXE-0S3uhOCr17HUVqnY2GM4njeI"
 TELEGRAM_CHAT_ID = "444451877"
 # --------------------------
 
+
 url = "https://api.coingecko.com/api/v3/simple/price"
 params = {
-    "ids": "bitcoin,ethereum",
-    "vs_currencies": "usd,rub"
+    "ids": "bitcoin,ethereum,solana,dash",
+    "vs_currencies": "usd,usdt"   # <-- заменили rub на usdt
 }
 
 try:
@@ -18,16 +19,24 @@ try:
     data = response.json()
 
     btc_usd = data["bitcoin"]["usd"]
-    btc_rub = data["bitcoin"]["rub"]
+    btc_usdt = data["bitcoin"]["usdt"]
     eth_usd = data["ethereum"]["usd"]
-    eth_rub = data["ethereum"]["rub"]
+    eth_usdt = data["ethereum"]["usdt"]
+    sol_usd = data["solana"]["usd"]
+    sol_usdt = data["solana"]["usdt"]
+    dash_usd = data["dash"]["usd"]
+    dash_usdt = data["dash"]["usdt"]
 
     message = (
         f"💰 Курс криптовалют:\n\n"
         f"🟡 Bitcoin (BTC):\n"
-        f"   ${btc_usd:,.0f} / {btc_rub:,.0f} руб.\n\n"
+        f"   ${btc_usd:,.0f} / {btc_usdt:,.0f} USDT\n\n"
         f"🔵 Ethereum (ETH):\n"
-        f"   ${eth_usd:,.0f} / {eth_rub:,.0f} руб."
+        f"   ${eth_usd:,.0f} / {eth_usdt:,.0f} USDT\n\n"
+        f"🟣 Solana (SOL):\n"
+        f"   ${sol_usd:,.2f} / {sol_usdt:,.2f} USDT\n\n"
+        f"🔷 Dash (DASH):\n"
+        f"   ${dash_usd:,.2f} / {dash_usdt:,.2f} USDT"
     )
 
     tg_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
