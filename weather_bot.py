@@ -16,7 +16,7 @@ now_local = datetime.now(tz)
 current_hour = now_local.hour
 current_date_str = now_local.strftime("%Y-%m-%d")
 
-url = "https://api.open-meteo.com/v1/forecast"
+url = "https://open-meteo.com"
 params = {
     "latitude": LAT,
     "longitude": LON,
@@ -57,11 +57,13 @@ try:
     forecast_lines = []
     
     if current_hour < 16:
-        # ДО 16:00 — показываем прогноз на остаток СЕГОДНЯШНЕГО дня (начиная со следующего часа)
+        # ДО 16:00 — показываем прогноз на остаток СЕГОДНЯШНЕГО дня
         forecast_lines.append("⏳ Прогноз на сегодня:")
         for i, t in enumerate(hourly["time"]):
             if t.startswith(current_date_str):
-                hour = int(t.split("T")[1].split(":")[0])
+                # t имеет формат "2026-03-30T15:00" -> берем часть после "T" и вытаскиваем час
+                hour_str = t.split("T")[1].split(":")[0]
+                hour = int(hour_str)
                 if hour > current_hour:
                     time_label = t.split("T")[1][:5]
                     temp = hourly["temperature_2m"][i]
@@ -72,12 +74,12 @@ try:
     else:
         # ПОСЛЕ 16:00 — переключаемся на ЗАВТРАШНЕЕ УТРО (с 06:00 до 12:00)
         forecast_lines.append("🌅 Прогноз на ЗАВТРАШНЕЕ УТРО:")
-        # Ищем индекс начала завтрашнего дня в массиве Open-Meteo
         for i, t in enumerate(hourly["time"]):
-            # Если это не сегодняшний день, значит начался завтрашний (или последующий)
+            # Если строка времени НЕ начинается с сегодняшней даты, значит это завтра (или позже)
             if not t.startswith(current_date_str):
-                hour = int(t.split("T")[1].split(":")[0])
-                # Фильтруем утренний интервал: от 6 утра до 12 дня
+                hour_str = t.split("T")[1].split(":")[0]
+                hour = int(hour_str)
+                # Ловим утренний интервал
                 if 6 <= hour <= 12:
                     time_label = t.split("T")[1][:5]
                     temp = hourly["temperature_2m"][i]
@@ -93,7 +95,7 @@ try:
         message += "Не удалось загрузить детальный прогноз."
 
     # 4. Отправка в Telegram
-    tg_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    tg_url = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
     tg_response = requests.post(tg_url, data={"chat_id": TELEGRAM_CHAT_ID, "text": message}, timeout=15)
     tg_response.raise_for_status()
     print("Уведомление отправлено успешно!")
