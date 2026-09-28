@@ -61,32 +61,34 @@ try:
         forecast_lines.append("⏳ Прогноз на сегодня:")
         for i, t in enumerate(hourly["time"]):
             if t.startswith(current_date_str):
-                # t имеет формат "2026-03-30T15:00" -> берем часть после "T" и вытаскиваем час
-                hour_str = t.split("T")[1].split(":")[0]
-                hour = int(hour_str)
+                # t имеет формат "2026-03-30T15:00" -> делим по "T"
+                parts = t.split("T")
+                time_str = parts[1]  # "15:00"
+                hour = int(time_str.split(":")[0])  # 15
+                
                 if hour > current_hour:
-                    time_label = t.split("T")[1][:5]
                     temp = hourly["temperature_2m"][i]
                     precip_prob = hourly["precipitation_probability"][i]
                     code = hourly["weather_code"][i]
                     desc = weather_codes.get(code, "")
-                    forecast_lines.append(f"{time_label}: {temp}°C, {desc} (осадки {precip_prob}%)")
+                    forecast_lines.append(f"{time_str}: {temp}°C, {desc} (осадки {precip_prob}%)")
     else:
         # ПОСЛЕ 16:00 — переключаемся на ЗАВТРАШНЕЕ УТРО (с 06:00 до 12:00)
         forecast_lines.append("🌅 Прогноз на ЗАВТРАШНЕЕ УТРО:")
         for i, t in enumerate(hourly["time"]):
-            # Если строка времени НЕ начинается с сегодняшней даты, значит это завтра (или позже)
+            # Если строка времени НЕ начинается с сегодняшней даты, значит это завтра
             if not t.startswith(current_date_str):
-                hour_str = t.split("T")[1].split(":")[0]
-                hour = int(hour_str)
-                # Ловим утренний интервал
+                parts = t.split("T")
+                time_str = parts[1]  # "06:00"
+                hour = int(time_str.split(":")[0])  # 6
+                
+                # Ловим только утренний интервал
                 if 6 <= hour <= 12:
-                    time_label = t.split("T")[1][:5]
                     temp = hourly["temperature_2m"][i]
                     precip_prob = hourly["precipitation_probability"][i]
                     code = hourly["weather_code"][i]
                     desc = weather_codes.get(code, "")
-                    forecast_lines.append(f"{time_label}: {temp}°C, {desc} (осадки {precip_prob}%)")
+                    forecast_lines.append(f"{time_str}: {temp}°C, {desc} (осадки {precip_prob}%)")
 
     # Добавляем блок прогноза к итоговому сообщению
     if len(forecast_lines) > 1:
