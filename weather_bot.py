@@ -3,7 +3,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 # --- НАСТРОЙКИ TELEGRAM ---
-TELEGRAM_TOKEN = "8847922404:AAGfmnFQXE-0S3uhOCr17HUVqnY2GM4njeI"
+TELEGRAM_TOKEN = "8847922404:AAFIsHxn6QDgFF6ZqWdPNZC7_Jm5sZZLcII"
 TELEGRAM_CHAT_ID = "444451877"
 # --------------------------
 
