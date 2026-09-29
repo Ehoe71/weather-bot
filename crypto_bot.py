@@ -1,7 +1,7 @@
 import requests
 
 # --- НАСТРОЙКИ TELEGRAM ---
-TELEGRAM_TOKEN = "8847922404:AAGfmnFQXE-0S3uhOCr17HUVqnY2GM4njeI"        # <-- вставьте свой токен
+TELEGRAM_TOKEN = "8847922404:AAFIsHxn6QDgFF6ZqWdPNZC7_Jm5sZZLcII"        # <-- вставьте свой токен
 TELEGRAM_CHAT_ID = "444451877"    # <-- вставьте свой Chat ID
 # --------------------------
 
