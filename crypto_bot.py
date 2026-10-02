@@ -1,14 +1,22 @@
 import requests
+import os
 
 # --- НАСТРОЙКИ TELEGRAM ---
-TELEGRAM_TOKEN = "8847922404:AAFIsHxn6QDgFF6ZqWdPNZC7_Jm5sZZLcII"        # <-- вставьте свой токен
-TELEGRAM_CHAT_ID = "444451877"    # <-- вставьте свой Chat ID
+# Токен лучше хранить в секретах GitHub, но для простоты можно оставить здесь
+TELEGRAM_TOKEN = os.environ.get"8847922404:AAFIsHxn6QDgFF6ZqWdPNZC7_Jm5sZZLcII"
+TELEGRAM_CHAT_ID = "444451877"
 # --------------------------
 
+# Список криптовалют, которые хотим отслеживать (ID из CoinGecko)
+COINS = ["bitcoin", "ethereum", "solana"]
+COIN_NAMES = {"bitcoin": "Bitcoin", "ethereum": "Ethereum", "solana": "Solana"}
+
+# 1. Запрос к API CoinGecko
 url = "https://api.coingecko.com/api/v3/simple/price"
 params = {
-    "ids": "bitcoin,ethereum,solana,dash",
-    "vs_currencies": "usd"   # <-- только USD, чтобы API не капризничал
+    "ids": ",".join(COINS),
+    "vs_currencies": "usd,rub",  # Запрашиваем цену в долларах и рублях
+    "include_24hr_change": "true" # Добавляем изменение за 24 часа
 }
 
 try:
@@ -16,26 +24,39 @@ try:
     response.raise_for_status()
     data = response.json()
 
-    btc = data["bitcoin"]["usd"]
-    eth = data["ethereum"]["usd"]
-    sol = data["solana"]["usd"]
-    dash = data["dash"]["usd"]
+    # 2. Формируем сообщение
+    message = "📊 Курс криптовалют:\n\n"
+    for coin_id in COINS:
+        if coin_id in data:
+            coin_data = data[coin_id]
+            name = COIN_NAMES.get(coin_id, coin_id.capitalize())
+            usd = coin_data.get("usd", "N/A")
+            rub = coin_data.get("rub", "N/A")
+            change = coin_data.get("usd_24h_change", 0)
 
-    message = (
-        f"💰 Курс криптовалют (USDT):\n\n"
-        f"🟡 Bitcoin (BTC):  ${btc:,.0f}\n\n"
-        f"🔵 Ethereum (ETH):  ${eth:,.0f}\n\n"
-        f"🟣 Solana (SOL):  ${sol:,.2f}\n\n"
-        f"🔷 Dash (DASH):  ${dash:,.2f}"
-    )
+            # Определяем эмодзи для изменения цены
+            if change > 0:
+                emoji = "📈"
+                sign = "+"
+            else:
+                emoji = "📉"
+                sign = ""
 
+            message += (
+                f"{emoji} {name}:\n"
+                f"   ${usd:,} | {rub:,} ₽\n"
+                f"   Изм. за 24ч: {sign}{change:.2f}%\n\n"
+            )
+
+    # 3. Отправка в Telegram
     tg_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    requests.post(tg_url, data={"chat_id": TELEGRAM_CHAT_ID, "text": message}, timeout=15)
-    print("Уведомление отправлено успешно!")
+    tg_response = requests.post(
+        tg_url,
+        data={"chat_id": TELEGRAM_CHAT_ID, "text": message},
+        timeout=15
+    )
+    tg_response.raise_for_status()
+    print("✅ Уведомление с курсом отправлено успешно!")
 
 except Exception as e:
-    print(f"Ошибка: {e}")
-    raise e
-import requests
-
-
+    print(f"❌ Произошла ошибка: {e}")
