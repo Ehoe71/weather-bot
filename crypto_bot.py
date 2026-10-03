@@ -3,7 +3,7 @@ import os
 
 # --- НАСТРОЙКИ TELEGRAM ---
 # Токен лучше хранить в секретах GitHub, но для простоты можно оставить здесь
-TELEGRAM_TOKEN = os.environ.get"8847922404:AAFIsHxn6QDgFF6ZqWdPNZC7_Jm5sZZLcII"
+TELEGRAM_TOKEN = "8847922404:AAFIsHxn6QDgfF6ZqWdPNZC7_Jm5sZZLcII"
 TELEGRAM_CHAT_ID = "444451877"
 # --------------------------
 
