@@ -1,101 +1,62 @@
 import requests
+import os
 
-# ==============================================================
-# НАСТРОЙКИ TELEGRAM
-# ==============================================================
+# --- НАСТРОЙКИ TELEGRAM ---
+# Токен лучше хранить в секретах GitHub, но для простоты можно оставить здесь
 TELEGRAM_TOKEN = "8847922404:AAFIsHxn6QDgfF6ZqWdPNZC7_Jm5sZZLcII"
 TELEGRAM_CHAT_ID = "444451877"
+# --------------------------
 
-# ==============================================================
-# СПИСОК МОНЕТ (ID из CoinGecko)
-# ==============================================================
-COINS = [
-    ("bitcoin", "Bitcoin"),
-    ("ethereum", "Ethereum"),
-    ("solana", "Solana"),
-]
+# Список криптовалют, которые хотим отслеживать (ID из CoinGecko)
+COINS = ["bitcoin", "ethereum", "solana"]
+COIN_NAMES = {"bitcoin": "Bitcoin", "ethereum": "Ethereum", "solana": "Solana"}
 
-# ==============================================================
-# КУРС USD/RUB от ЦБ РФ
-# ==============================================================
-def get_usd_rub():
-    try:
-        r = requests.get("https://www.cbr-xml-daily.ru/daily_json.js", timeout=15)
-        r.raise_for_status()
-        return float(r.json()["Valute"]["USD"]["Value"])
-    except Exception as e:
-        print(f"⚠️ Не удалось получить курс USD/RUB: {e}")
-        return 95.0
+# 1. Запрос к API CoinGecko
+url = "https://api.coingecko.com/api/v3/simple/price"
+params = {
+    "ids": ",".join(COINS),
+    "vs_currencies": "usd,rub",  # Запрашиваем цену в долларах и рублях
+    "include_24hr_change": "true" # Добавляем изменение за 24 часа
+}
 
-# ==============================================================
-# ЦЕНЫ С COINGECKO (работает из GitHub Actions)
-# ==============================================================
-def get_prices_coingecko():
-    ids = ",".join(c[0] for c in COINS)
-    url = "https://api.coingecko.com/api/v3/simple/price"
-    r = requests.get(url, params={
-        "ids": ids,
-        "vs_currencies": "usd,rub",
-        "include_24hr_change": "true",
-    }, timeout=15)
-    r.raise_for_status()
-    data = r.json()
-    result = {}
-    for cg_id, name in COINS:
-        if cg_id in data:
-            d = data[cg_id]
-            result[cg_id] = {
-                "name": name,
-                "usd": float(d["usd"]),
-                "rub": float(d.get("rub", 0)),
-                "change": float(d.get("usd_24hr_change", 0)),
-            }
-    return result
+try:
+    response = requests.get(url, params=params, timeout=15)
+    response.raise_for_status()
+    data = response.json()
 
-# ==============================================================
-# ОСНОВНАЯ ЛОГИКА
-# ==============================================================
-def main():
-    usd_rub = get_usd_rub()
-    print(f"Курс USD/RUB: {usd_rub:.2f}")
-
-    prices = get_prices_coingecko()
-    print(f"Получены цены: {list(prices.keys())}")
-
+    # 2. Формируем сообщение
     message = "📊 Курс криптовалют:\n\n"
-    for cg_id, _ in COINS:
-        if cg_id not in prices:
-            continue
-        p = prices[cg_id]
-        usd = p["usd"]
-        rub = p["rub"] if p["rub"] else usd * usd_rub
-        change = p["change"]
+    for coin_id in COINS:
+        if coin_id in data:
+            coin_data = data[coin_id]
+            name = COIN_NAMES.get(coin_id, coin_id.capitalize())
+            usd = coin_data.get("usd", "N/A")
+            rub = coin_data.get("rub", "N/A")
+            change = coin_data.get("usd_24h_change", 0)
 
-        emoji = "📈" if change > 0 else "📉"
-        sign = "+" if change > 0 else ""
+            # Определяем эмодзи для изменения цены
+            if change > 0:
+                emoji = "📈"
+                sign = "+"
+            else:
+                emoji = "📉"
+                sign = ""
 
-        message += (
-            f"{emoji} {p['name']}:\n"
-            f"   ${usd:,.2f} | {rub:,.0f} ₽\n"
-            f"   Изм. за 24ч: {sign}{change:.2f}%\n\n"
-        )
+            message += (
+                f"{emoji} {name}:\n"
+                f"   ${usd:,} | {rub:,} ₽\n"
+                f"   Изм. за 24ч: {sign}{change:.2f}%\n\n"
+            )
 
-    # === ОТПРАВКА В TELEGRAM С ДИАГНОСТИКОЙ ===
+    # 3. Отправка в Telegram
     tg_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    r = requests.post(tg_url, data={
-        "chat_id": TELEGRAM_CHAT_ID,
-        "text": message,
-    }, timeout=15)
+    tg_response = requests.post(
+        tg_url,
+        data={"chat_id": TELEGRAM_CHAT_ID, "text": message},
+        timeout=15
+    )
+    tg_response.raise_for_status()
+    print("✅ Уведомление с курсом отправлено успешно!")
 
-    print(f"[TG] HTTP-статус: {r.status_code}")
-    print(f"[TG] Ответ: {r.text}")
-
-    r.raise_for_status()
-    data = r.json()
-    if not data.get("ok"):
-        raise RuntimeError(f"Telegram вернул ошибку: {data.get('description')}")
-
-    print("✅ Курс отправлен!")
-
-if __name__ == "__main__":
-    main()
+except Exception as e:
+    print(f"❌ Произошла ошибка: {e}")
