@@ -1,62 +1,85 @@
 import requests
-import os
 
-# --- НАСТРОЙКИ TELEGRAM ---
-# Токен лучше хранить в секретах GitHub, но для простоты можно оставить здесь
+# ==============================================================
+# НАСТРОЙКИ TELEGRAM
+# ==============================================================
 TELEGRAM_TOKEN = "8847922404:AAFIsHxn6QDgfF6ZqWdPNZC7_Jm5sZZLcII"
 TELEGRAM_CHAT_ID = "444451877"
-# --------------------------
 
-# Список криптовалют, которые хотим отслеживать (ID из CoinGecko)
-COINS = ["bitcoin", "ethereum", "solana"]
-COIN_NAMES = {"bitcoin": "Bitcoin", "ethereum": "Ethereum", "solana": "Solana"}
+# ==============================================================
+# СПИСОК МОНЕТ
+# ==============================================================
+COINS = [
+    ("BTCUSDT", "Bitcoin"),
+    ("ETHUSDT", "Ethereum"),
+    ("SOLUSDT", "Solana"),
+]
 
-# 1. Запрос к API CoinGecko
-url = "https://api.coingecko.com/api/v3/simple/price"
-params = {
-    "ids": ",".join(COINS),
-    "vs_currencies": "usd,rub",  # Запрашиваем цену в долларах и рублях
-    "include_24hr_change": "true" # Добавляем изменение за 24 часа
-}
+# ==============================================================
+# КУРС USD/RUB от ЦБ РФ
+# ==============================================================
+def get_usd_rub():
+    try:
+        r = requests.get("https://www.cbr-xml-daily.ru/daily_json.js", timeout=15)
+        r.raise_for_status()
+        return float(r.json()["Valute"]["USD"]["Value"])
+    except Exception as e:
+        print(f"⚠️ Не удалось получить курс USD/RUB: {e}")
+        return 95.0
 
-try:
-    response = requests.get(url, params=params, timeout=15)
-    response.raise_for_status()
-    data = response.json()
+# ==============================================================
+# ЦЕНЫ С BINANCE (работает из GitHub Actions)
+# ==============================================================
+def get_prices_binance():
+    result = {}
+    url = "https://api.binance.com/api/v3/ticker/24hr"
+    for symbol, name in COINS:
+        r = requests.get(url, params={"symbol": symbol}, timeout=15)
+        r.raise_for_status()
+        d = r.json()
+        result[symbol] = {
+            "name": name,
+            "usd": float(d["lastPrice"]),
+            "change": float(d["priceChangePercent"]),
+        }
+    return result
 
-    # 2. Формируем сообщение
+# ==============================================================
+# ОСНОВНАЯ ЛОГИКА
+# ==============================================================
+def main():
+    usd_rub = get_usd_rub()
+    print(f"Курс USD/RUB: {usd_rub:.2f}")
+
+    prices = get_prices_binance()
+    print(f"Получены цены: {list(prices.keys())}")
+
     message = "📊 Курс криптовалют:\n\n"
-    for coin_id in COINS:
-        if coin_id in data:
-            coin_data = data[coin_id]
-            name = COIN_NAMES.get(coin_id, coin_id.capitalize())
-            usd = coin_data.get("usd", "N/A")
-            rub = coin_data.get("rub", "N/A")
-            change = coin_data.get("usd_24h_change", 0)
+    for symbol, _ in COINS:
+        if symbol not in prices:
+            continue
+        p = prices[symbol]
+        usd = p["usd"]
+        rub = usd * usd_rub
+        change = p["change"]
 
-            # Определяем эмодзи для изменения цены
-            if change > 0:
-                emoji = "📈"
-                sign = "+"
-            else:
-                emoji = "📉"
-                sign = ""
+        emoji = "📈" if change > 0 else "📉"
+        sign = "+" if change > 0 else ""
 
-            message += (
-                f"{emoji} {name}:\n"
-                f"   ${usd:,} | {rub:,} ₽\n"
-                f"   Изм. за 24ч: {sign}{change:.2f}%\n\n"
-            )
+        message += (
+            f"{emoji} {p['name']}:\n"
+            f"   ${usd:,.2f} | {rub:,.0f} ₽\n"
+            f"   Изм. за 24ч: {sign}{change:.2f}%\n\n"
+        )
 
-    # 3. Отправка в Telegram
+    # Отправка в Telegram
     tg_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    tg_response = requests.post(
-        tg_url,
-        data={"chat_id": TELEGRAM_CHAT_ID, "text": message},
-        timeout=15
-    )
-    tg_response.raise_for_status()
-    print("✅ Уведомление с курсом отправлено успешно!")
+    r = requests.post(tg_url, data={
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": message,
+    }, timeout=15)
+    r.raise_for_status()
+    print("✅ Курс отправлен!")
 
-except Exception as e:
-    print(f"❌ Произошла ошибка: {e}")
+if __name__ == "__main__":
+    main()
