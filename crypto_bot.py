@@ -7,12 +7,12 @@ TELEGRAM_TOKEN = "8847922404:AAFIsHxn6QDgfF6ZqWdPNZC7_Jm5sZZLcII"
 TELEGRAM_CHAT_ID = "444451877"
 
 # ==============================================================
-# СПИСОК МОНЕТ
+# СПИСОК МОНЕТ (ID из CoinGecko)
 # ==============================================================
 COINS = [
-    ("BTCUSDT", "Bitcoin"),
-    ("ETHUSDT", "Ethereum"),
-    ("SOLUSDT", "Solana"),
+    ("bitcoin", "Bitcoin"),
+    ("ethereum", "Ethereum"),
+    ("solana", "Solana"),
 ]
 
 # ==============================================================
@@ -28,20 +28,28 @@ def get_usd_rub():
         return 95.0
 
 # ==============================================================
-# ЦЕНЫ С BINANCE (работает из GitHub Actions)
+# ЦЕНЫ С COINGECKO (работает из GitHub Actions)
 # ==============================================================
-def get_prices_binance():
+def get_prices_coingecko():
+    ids = ",".join(c[0] for c in COINS)
+    url = "https://api.coingecko.com/api/v3/simple/price"
+    r = requests.get(url, params={
+        "ids": ids,
+        "vs_currencies": "usd,rub",
+        "include_24hr_change": "true",
+    }, timeout=15)
+    r.raise_for_status()
+    data = r.json()
     result = {}
-    url = "https://api.binance.com/api/v3/ticker/24hr"
-    for symbol, name in COINS:
-        r = requests.get(url, params={"symbol": symbol}, timeout=15)
-        r.raise_for_status()
-        d = r.json()
-        result[symbol] = {
-            "name": name,
-            "usd": float(d["lastPrice"]),
-            "change": float(d["priceChangePercent"]),
-        }
+    for cg_id, name in COINS:
+        if cg_id in data:
+            d = data[cg_id]
+            result[cg_id] = {
+                "name": name,
+                "usd": float(d["usd"]),
+                "rub": float(d.get("rub", 0)),
+                "change": float(d.get("usd_24hr_change", 0)),
+            }
     return result
 
 # ==============================================================
@@ -51,16 +59,16 @@ def main():
     usd_rub = get_usd_rub()
     print(f"Курс USD/RUB: {usd_rub:.2f}")
 
-    prices = get_prices_binance()
+    prices = get_prices_coingecko()
     print(f"Получены цены: {list(prices.keys())}")
 
     message = "📊 Курс криптовалют:\n\n"
-    for symbol, _ in COINS:
-        if symbol not in prices:
+    for cg_id, _ in COINS:
+        if cg_id not in prices:
             continue
-        p = prices[symbol]
+        p = prices[cg_id]
         usd = p["usd"]
-        rub = usd * usd_rub
+        rub = p["rub"] if p["rub"] else usd * usd_rub
         change = p["change"]
 
         emoji = "📈" if change > 0 else "📉"
@@ -72,13 +80,21 @@ def main():
             f"   Изм. за 24ч: {sign}{change:.2f}%\n\n"
         )
 
-    # Отправка в Telegram
+    # === ОТПРАВКА В TELEGRAM С ДИАГНОСТИКОЙ ===
     tg_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     r = requests.post(tg_url, data={
         "chat_id": TELEGRAM_CHAT_ID,
         "text": message,
     }, timeout=15)
+
+    print(f"[TG] HTTP-статус: {r.status_code}")
+    print(f"[TG] Ответ: {r.text}")
+
     r.raise_for_status()
+    data = r.json()
+    if not data.get("ok"):
+        raise RuntimeError(f"Telegram вернул ошибку: {data.get('description')}")
+
     print("✅ Курс отправлен!")
 
 if __name__ == "__main__":
